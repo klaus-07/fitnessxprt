@@ -2,8 +2,9 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const dotenv = require("dotenv").config();
 const mongoose = require("mongoose");
-const ab = require("./controller/defaultUser");
+const ab = require("./defaultUser");
 const app = express();
+const userRouter = require("./controller/user");
 
 mongoose
   .connect("mongodb://127.0.0.1:27017/fitnesxprt", {
@@ -24,6 +25,7 @@ app.get("/", (req, res, next) => {
 // body-parser
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
+app.use("/api/user", userRouter);
 
 // listen to the port 3000
 app.listen(process.env.APP_PORT, (err) => {

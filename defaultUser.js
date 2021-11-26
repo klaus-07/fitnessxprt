@@ -1,4 +1,4 @@
-const User = require("../models/userRegister");
+const User = require("./models/userRegister");
 const bcrypt = require("bcrypt");
 
 const defaultUser = [
@@ -23,24 +23,20 @@ const ab = () => {
           const passwords = user.password;
           const names = user.name;
           const emails = user.email;
-          console.log("password:", passwords);
           const salt = await bcrypt.genSalt(10);
-          // console.log("salt:"salt);
           const hashPassword = await bcrypt.hash(passwords, salt);
-          console.log("hashpassword:", hashPassword);
+
           const savedData = {
             name: names,
             email: emails,
             password: hashPassword,
           };
-          console.log(savedData);
           await new User(savedData).save();
         });
         resolve();
       } catch (error) {
         console.log("error:", error);
       }
-      resolve();
     } else {
       resolve();
     }
