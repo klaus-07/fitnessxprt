@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-// const isEmail = require("validate");
 
 const userRegisterSchema = new mongoose.Schema({
   name: {
@@ -11,12 +10,19 @@ const userRegisterSchema = new mongoose.Schema({
     required: true,
     unique: true,
     lowercase: true,
-    // validate: [isEmail],
   },
   password: {
     type: String,
     required: true,
     minlength: 4,
+  },
+  followers: {
+    type: Array,
+    default: [],
+  },
+  followings: {
+    type: Array,
+    default: [],
   },
 });
 

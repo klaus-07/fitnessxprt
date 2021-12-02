@@ -5,6 +5,9 @@ const mongoose = require("mongoose");
 const ab = require("./defaultUser");
 const app = express();
 const userRouter = require("./controller/user");
+const blogRouter = require("./controller/blogs");
+const nutritionRouter = require("./controller/nutrition");
+const cors = require("cors");
 
 mongoose
   .connect("mongodb://127.0.0.1:27017/fitnesxprt", {
@@ -23,9 +26,12 @@ app.get("/", (req, res, next) => {
 });
 
 // body-parser
+app.use(cors());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use("/api/user", userRouter);
+app.use("/api/blog", blogRouter);
+app.use("/api/nutrition", nutritionRouter);
 
 // listen to the port 3000
 app.listen(process.env.APP_PORT, (err) => {
