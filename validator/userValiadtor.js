@@ -67,7 +67,20 @@ const loginValidator = async (req, res, next) => {
   }
 };
 
+const followValidator = async (req, res, next) => {
+  const idexists = req.body.id;
+  if (idexists) {
+    res.json({
+      success: false,
+      message: "you already follow this user",
+    });
+  } else {
+    next();
+  }
+};
+
 module.exports = {
   userValidator,
   loginValidator,
+  followValidator,
 };

@@ -1,23 +1,25 @@
 const mongoose = require("mongoose");
-
-const nutritionSchema = new mongoose.Schema({
-  user: {
-    type: mongoose.Types.ObjectId,
-    required: true,
-    ref: "User",
+// const { ObjectId } = mongoose.Schema.Types;
+const nutritionSchema = new mongoose.Schema(
+  {
+    nutritionname: {
+      type: String,
+      required: true,
+    },
+    ingredient: {
+      type: String,
+      required: true,
+    },
+    procedure: {
+      type: Array,
+      required: true,
+    },
+    user: {
+      type: mongoose.Types.ObjectId,
+      ref: "User",
+    },
   },
-  nutritionname: {
-    type: String,
-    required: true,
-  },
-  ingredient: {
-    type: String,
-    required: true,
-  },
-  procedure: {
-    type: Array,
-    required: true,
-  },
-});
+  { timestamps: true }
+);
 
 module.exports = mongoose.model("Nutrition", nutritionSchema);

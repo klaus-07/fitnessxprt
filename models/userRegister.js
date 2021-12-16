@@ -14,14 +14,22 @@ const userRegisterSchema = new mongoose.Schema({
   password: {
     type: String,
     required: true,
-    minlength: 4,
+    min: 4,
+    max: 50,
   },
   followers: {
-    type: Array,
+    type: [mongoose.Types.ObjectId],
+    ref: "User",
     default: [],
   },
   followings: {
-    type: Array,
+    type: [mongoose.Types.ObjectId],
+    ref: "User",
+    default: [],
+  },
+  saved: {
+    type: [mongoose.Types.ObjectId],
+    ref: "User",
     default: [],
   },
 });

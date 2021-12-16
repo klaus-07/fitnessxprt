@@ -6,13 +6,12 @@ const userValidator = require("../validator/userValiadtor");
 const jwt = require("jsonwebtoken");
 const verifyToken = require("../validator/services");
 
-router.get("/get-user", async (req, res, next) => {
+router.get("/get-user", verifyToken, async (req, res, next) => {
   try {
-    const id = req.body.id;
+    const id = req.User.id;
 
     const ab = await User.findById(id);
     res.json(ab);
-    console.log(ab);
   } catch (err) {
     res.status(200).json("no user is here");
   }
@@ -59,10 +58,14 @@ router.post("/login", userValidator.loginValidator, async (req, res, next) => {
     const validPass = await bcrypt.compare(password, user.password);
     if (validPass) {
       const access_token = await jwt.sign(
-        { id: user._id },
+        {
+          id: user._id,
+          followers: user.followers,
+          followings: user.followings,
+        },
         process.env.JWT_SECRET,
         {
-          expiresIn: "25d",
+          expiresIn: "250d",
         }
       );
       res.json({
@@ -84,9 +87,9 @@ router.post("/login", userValidator.loginValidator, async (req, res, next) => {
   }
 });
 
-router.post("/update-user", async (req, res, next) => {
+router.post("/update-user", verifyToken, async (req, res, next) => {
   const user = await req.body;
-  User.updateOne({ _id: req.body.id }, user)
+  User.updateOne({ _id: req.User.id }, user)
     .then(() => {
       res.status(202).json({
         success: true,
@@ -100,8 +103,8 @@ router.post("/update-user", async (req, res, next) => {
       });
     });
 });
-router.post("/delete-user", async (req, res) => {
-  const id = req.body.id;
+router.post("/delete-user", verifyToken, async (req, res) => {
+  const id = req.User.id;
   const deleteUser = await User.findByIdAndDelete(id, (err, docs) => {
     if (docs) {
       res.status(202).json({
@@ -117,64 +120,88 @@ router.post("/delete-user", async (req, res) => {
   });
 });
 
-// follow user
-router.post("/:id/follow", verifyToken, async (req, res) => {
-  if (req.body.id !== req.params.id) {
-    try {
-      const user = await User.findById(req.params.id);
-      const currentUser = await User.findById(req.body.id);
-      if (!user.followers.includes(req.body.id)) {
-        await user.updateOne({ $push: { followers: req.body.id } });
-        await currentUser.updateOne({ $push: { followings: req.params.id } });
-        res.status(200).json({
-          success: true,
-          message: "user has been followed",
-        });
-      } else {
-        res.status(403).json({
-          success: false,
-          message: "you already followed this user",
-        });
-      }
-    } catch (err) {
-      res.status(500).json(err);
+router.post("/follow", verifyToken, async (req, res) => {
+  try {
+    const user = await User.find({ _id: req.body.id, followers: req.User.id });
+    if (user.length > 0) {
+      return res.status(500).json({
+        success: false,
+        message: "you already followed this user",
+      });
     }
-  } else {
-    res.status(403).json({
+    const userFollow = await User.findByIdAndUpdate(
+      req.body.id,
+      { $push: { followers: req.User.id } },
+      { new: true }
+    );
+
+    // console.log(req.User);
+    const userfollowing = await User.findByIdAndUpdate(
+      req.User.id,
+      { $push: { followings: req.body.id } },
+      { new: true }
+    );
+    res.json({
+      success: true,
+      data: { userFollow, userfollowing },
+    });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({
       success: false,
-      message: "you  follow yourself",
+      message: err.message,
     });
   }
 });
 
-// unfollow user
-router.post("/:id/unfollow", verifyToken, async (req, res) => {
-  if (req.body.id !== req.params.id) {
-    try {
-      const user = await User.findById(req.params.id);
-      const currentUser = await User.findById(req.body.id);
-      if (user.followers.includes(req.body.id)) {
-        await user.updateOne({ $pull: { followers: req.body.id } });
-        await currentUser.updateOne({ $pull: { followings: req.params.id } });
-        res.status(200).json({
-          success: true,
-          message: "user has been Unfollowed",
-        });
-      } else {
-        res.status(403).json({
-          success: false,
-          message: `you don't follow this user`,
-        });
-      }
-    } catch (err) {
-      res.status(500).json(err);
-    }
-  } else {
-    res.status(403).json({
-      success: false,
-      message: "you  unfollow yourself",
-    });
-  }
+//unfollow user
+router.post("/unfollow", verifyToken, async (req, res) => {
+  const userFollow = await User.findByIdAndUpdate(
+    req.body.id,
+    { $pull: { followers: req.User.id } },
+    { new: true }
+  );
+
+  // console.log(req.User);
+  const userfollowing = await User.findByIdAndUpdate(
+    req.User.id,
+    { $pull: { followings: req.body.id } },
+    { new: true }
+  );
+  res.json({
+    success: true,
+    data: { userFollow, userfollowing },
+  });
 });
+
+// unfollow user
+// router.post("/:id/unfollow", verifyToken, async (req, res) => {
+//   if (req.body.id !== req.params.id) {
+//     try {
+//       const user = await User.findById(req.params.id);
+//       const currentUser = await User.findById(req.body.id);
+//       if (user.followers.includes(req.body.id)) {
+//         await user.updateOne({ $pull: { followers: req.body.id } });
+//         await currentUser.updateOne({ $pull: { followings: req.params.id } });
+//         res.status(200).json({
+//           success: true,
+//           message: "user has been Unfollowed",
+//         });
+//       } else {
+//         res.status(403).json({
+//           success: false,
+//           message: `you don't follow this user`,
+//         });
+//       }
+//     } catch (err) {
+//       res.status(500).json(err);
+//     }
+//   } else {
+//     res.status(403).json({
+//       success: false,
+//       message: "you  unfollow yourself",
+//     });
+//   }
+// });
 
 module.exports = router;

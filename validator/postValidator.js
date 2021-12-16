@@ -4,47 +4,44 @@ const Nutrition = require("../models/posts/nutrition");
 const mongoose = require("mongoose");
 
 const blogsValidator = async (req, res, next) => {
-  const { blogname, description, user } = req.body;
-  if (mongoose.Types.ObjectId.isValid(user)) {
-    const exists = await User.findById(user);
-    if (!exists) {
-      res.status(400).json({
-        success: false,
-        message: "user id is not proper",
-      });
-    } else {
-      next();
-    }
-  } else {
-    res.status(403).json({
+  const { blogname, description } = req.body;
+
+  if (!blogname) {
+    return res.json({
       success: false,
-      message: "user id is not defined",
-      data: null,
+      message: "please add blogname filed",
     });
+  } else if (!description) {
+    return res.json({
+      success: false,
+      message: "please add description filed",
+    });
+  } else {
+    next();
   }
 };
 
 const nutritionValidator = async (req, res, next) => {
-  const { user, nutritionname, ingredient, procedure } = req.body;
-  if (mongoose.Types.ObjectId.isValid(user)) {
-    const exists = await User.findById(user);
-    if (!exists) {
-      res.status(400).json({
-        success: false,
-        message: "user id is not proper",
-      });
-    } else {
-      next();
-    }
-  } else {
-    res.status(403).json({
+  const { nutritionname, ingredient, procedure } = req.body;
+  if (!nutritionname) {
+    return res.json({
       success: false,
-      message: "user id is not defined",
-      data: null,
+      message: "please add nutritionname filed",
     });
+  } else if (!ingredient) {
+    return res.json({
+      success: false,
+      message: "please add ingredient filed",
+    });
+  } else if (!procedure) {
+    return res.json({
+      success: false,
+      message: "please add procedure filed",
+    });
+  } else {
+    next();
   }
 };
-
 module.exports = {
   blogsValidator,
   nutritionValidator,
