@@ -9,12 +9,12 @@ const blogsValidator = async (req, res, next) => {
   if (!blogname) {
     return res.json({
       success: false,
-      message: "please add blogname filed",
+      message: "please add blogname field",
     });
   } else if (!description) {
     return res.json({
       success: false,
-      message: "please add description filed",
+      message: "please add description field",
     });
   } else {
     next();

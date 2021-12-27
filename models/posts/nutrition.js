@@ -7,11 +7,15 @@ const nutritionSchema = new mongoose.Schema(
       required: true,
     },
     ingredient: {
-      type: String,
+      type: Array,
       required: true,
     },
     procedure: {
       type: Array,
+      required: true,
+    },
+    nutritionImage: {
+      type: String,
       required: true,
     },
     user: {

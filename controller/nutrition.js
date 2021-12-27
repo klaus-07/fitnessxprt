@@ -2,10 +2,22 @@ const express = require("express");
 const mongoose = require("mongoose");
 
 const router = require("express").Router();
+const multer = require("multer");
 const Nutrition = require("../models/posts/nutrition");
 const User = require("../models/userRegister");
 const postValidator = require("../validator/postValidator");
 const verifyToken = require("../validator/services");
+
+const fileStorageEngine = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "./images");
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + "--" + file.originalname);
+  },
+});
+
+const upload = multer({ storage: fileStorageEngine });
 
 router.get("/get-nutrition", verifyToken, async (req, res) => {
   const id = req.body.id;
@@ -29,14 +41,17 @@ router.get("/get-all-nutrition", verifyToken, async (req, res) => {
 
 router.post(
   "/create-nutrition",
+  upload.single("image"),
   postValidator.nutritionValidator,
   verifyToken,
   async (req, res, next) => {
     const { nutritionname, ingredient, procedure } = req.body;
+    const nutritionImage = `localhost:3000/${req.file.path}`;
     const nutrition = await new Nutrition({
       nutritionname,
       ingredient,
       procedure,
+      nutritionImage,
       user: req.User.id,
     }).save();
     const savedData = await Nutrition.findById(nutrition._id)
@@ -56,29 +71,35 @@ router.post(
   }
 );
 
-router.post("/update-nutrition", verifyToken, async (req, res) => {
-  const nutritionId = req.body.id;
-  const nutrition = await req.body;
-  const option = { new: true };
-  const updateNutrition = await Nutrition.findByIdAndUpdate(
-    nutritionId,
-    nutrition,
-    option
-  )
-    .populate("user")
-    .then((result) => {
-      res.status(202).json({
-        success: true,
-        message: result,
+router.post(
+  "/update-nutrition",
+  upload.single("image"),
+  verifyToken,
+  async (req, res) => {
+    const nutritionId = req.body.id;
+    const { nutritionname, ingredient, procedure } = req.body;
+    const nutritionImage = `localhost:3000/${req.file.path}`;
+    const option = { new: true };
+    const updateNutrition = await Nutrition.findByIdAndUpdate(
+      nutritionId,
+      { nutritionname, ingredient, procedure, nutritionImage },
+      option
+    )
+      .populate("user")
+      .then((result) => {
+        res.status(202).json({
+          success: true,
+          message: result,
+        });
+      })
+      .catch((err) => {
+        res.status(400).json({
+          success: false,
+          message: "this filed did not update",
+        });
       });
-    })
-    .catch((err) => {
-      res.status(400).json({
-        success: false,
-        message: "this filed did not update",
-      });
-    });
-});
+  }
+);
 
 router.post("/delete-nutrition", verifyToken, async (req, res) => {
   const id = req.body.id;
@@ -104,10 +125,7 @@ router.get("/following-nutrition", verifyToken, async (req, res) => {
   // }).populate("user");
   // console.log(posts);
   // res.json(posts);
-  const ab = req.User;
-  console.log("ab:", ab);
-
-  // const currentUser = await User.findById(req.User.id);
+  // const ab = req.User;
   const nutrition = await Nutrition.find(
     {
       user: { $in: req.User.followings },

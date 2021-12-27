@@ -9,22 +9,9 @@ const exerciseSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  posttype: {
-    type: String,
-    enum: ["workout", "schedule"],
-    required: true,
-  },
-  weeks: {
-    type: Number,
-    default: null,
-  },
-  days: {
-    type: Number,
-    default: null,
-  },
   exercise: [
     {
-      name: {
+      exerciseName: {
         type: String,
         required: true,
       },
@@ -36,6 +23,13 @@ const exerciseSchema = new mongoose.Schema({
         type: Number,
         required: true,
       },
+    },
+  ],
+  progress: [
+    {
+      exerciseName: { type: String, required: true },
+      sets: { type: Number, default: 0 },
+      reps: { type: Number, default: 0 },
     },
   ],
   user: {

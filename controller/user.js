@@ -5,6 +5,18 @@ const User = require("../models/userRegister");
 const userValidator = require("../validator/userValiadtor");
 const jwt = require("jsonwebtoken");
 const verifyToken = require("../validator/services");
+const multer = require("multer");
+
+const fileStorageEngine = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "./images");
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + "--" + file.originalname);
+  },
+});
+
+const upload = multer({ storage: fileStorageEngine });
 
 router.get("/get-user", verifyToken, async (req, res, next) => {
   try {
@@ -26,26 +38,33 @@ router.post("/register", userValidator.userValidator, async (req, res) => {
   const { name, email, password, confirmPassword } = req.body;
 
   // hash password
-  const salt = await bcrypt.genSalt(10);
-  const hashPassword = await bcrypt.hash(password, salt);
+  if (password.length >= 4) {
+    const salt = await bcrypt.genSalt(10);
+    const hashPassword = await bcrypt.hash(password, salt);
 
-  // create a new user
-  const user = await new User({
-    name,
-    email,
-    password: hashPassword,
-  });
-  // save the filed
-  try {
-    const savedUser = await user.save();
-    res.status(200).json({
-      success: true,
-      savedUser,
+    // create a new user
+    const user = await new User({
+      name,
+      email,
+      password: hashPassword,
     });
-  } catch (err) {
-    res.status(400).json({
+    // save the filed
+    try {
+      const savedUser = await user.save();
+      res.status(200).json({
+        success: true,
+        savedUser,
+      });
+    } catch (err) {
+      res.status(400).json({
+        success: false,
+        err,
+      });
+    }
+  } else {
+    res.status(404).json({
       success: false,
-      err,
+      message: "password must be 4 character",
     });
   }
 });
@@ -119,6 +138,30 @@ router.post("/delete-user", verifyToken, async (req, res) => {
     }
   });
 });
+router.post(
+  "/upload-image",
+  upload.single("image"),
+  verifyToken,
+  async (req, res) => {
+    const id = req.User.id;
+
+    const userImage = `localhost:3000/${req.file.path}`;
+    const options = { new: true };
+    const updateImage = await User.findByIdAndUpdate(id, { userImage }, options)
+      .then((result) => {
+        res.status(202).json({
+          success: true,
+          message: result,
+        });
+      })
+      .catch((err) => {
+        res.status(400).json({
+          success: false,
+          message: err.message,
+        });
+      });
+  }
+);
 
 router.post("/follow", verifyToken, async (req, res) => {
   try {

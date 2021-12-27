@@ -17,6 +17,10 @@ const userRegisterSchema = new mongoose.Schema({
     min: 4,
     max: 50,
   },
+  userImage: {
+    type: String,
+    default: null,
+  },
   followers: {
     type: [mongoose.Types.ObjectId],
     ref: "User",
