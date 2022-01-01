@@ -5,6 +5,7 @@ const User = require("../models/userRegister");
 const postValidator = require("../validator/postValidator");
 const verifyToken = require("../validator/services");
 const multer = require("multer");
+const mongoose = require("mongoose");
 const fileStorageEngine = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, "./images");
@@ -25,10 +26,27 @@ router.get("/get-blog", verifyToken, async (req, res) => {
   });
 });
 router.get("/get-all-blog", verifyToken, async (req, res) => {
-  const getAllBlog = await Blogs.find({})
-    .populate("user")
-    .sort({ createdAt: -1 });
-  res.status(202).json(getAllBlog);
+  try {
+    const user = req.User.id;
+    const getAllBlog = await Blogs.find({ user })
+      .populate("user")
+      .sort({ createdAt: -1 });
+    if (!getAllBlog) {
+      res.status(404).json({
+        success: false,
+        message: "blog data not found",
+      });
+    }
+    res.status(202).json({
+      success: true,
+      data: getAllBlog,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
 });
 
 router.post(
@@ -39,7 +57,7 @@ router.post(
   async (req, res, next) => {
     console.log(req.file);
     const { blogname, description } = req.body;
-    const blogimage = `localhost:3000/${req.file.path}`;
+    const blogimage = `localhost:5000/${req.file.path}`;
     const blog = await new Blogs({
       blogname,
       description,
@@ -70,7 +88,7 @@ router.post(
   upload.single("image"),
   async (req, res) => {
     const { blogname, description } = req.body;
-    const blogimage = `localhost:3000/${req.file.path}`;
+    const blogimage = `localhost:5000/${req.files.path}`;
     const option = { new: true };
     const updateBlogs = await Blogs.findByIdAndUpdate(
       req.body.id,
@@ -111,20 +129,28 @@ router.post("/delete-blog", verifyToken, async (req, res) => {
   }).populate("user");
 });
 
-router.get("/get-following-blog", verifyToken, async (req, res) => {
+router.get("/following-blog", verifyToken, async (req, res) => {
   try {
-    const currentUser = await User.findById(req.body.id);
-    const userBlogs = await Blogs.find({ user: currentUser._id });
-    const followingBlog = await Promise.all(
-      currentUser.followings.map((followingId) => {
-        return Blogs.find({ user: followingId }).populate("user");
-      })
+    const userId = req.User.id;
+    const user = await User.findOne({ _id: userId });
+    const followingUser = user.followings;
+    const response = followingUser.map((element) =>
+      mongoose.Types.ObjectId(element)
     );
-    res.json(userBlogs.concat(...followingBlog));
-  } catch (err) {
+    const blog = await Blogs.find({ user: { $in: response } })
+      .populate("user")
+      .sort({
+        createdAt: -1,
+      });
+    res.status(200).json({
+      success: true,
+      data: blog,
+    });
+  } catch (error) {
+    console.log(error, ":error");
     res.status(500).json({
       success: false,
-      message: err.message,
+      message: error.message,
     });
   }
 });

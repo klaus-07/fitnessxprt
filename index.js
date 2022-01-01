@@ -9,6 +9,7 @@ const blogRouter = require("./controller/blogs");
 const nutritionRouter = require("./controller/nutrition");
 const exerciseRouter = require("./controller/exercise");
 const cors = require("cors");
+const User = require("./models/userRegister");
 
 mongoose
   .connect("mongodb://127.0.0.1:27017/fitnesxprt", {

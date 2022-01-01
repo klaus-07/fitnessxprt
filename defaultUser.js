@@ -1,5 +1,7 @@
 const User = require("./models/userRegister");
 const bcrypt = require("bcrypt");
+const express = require("express");
+const app = express();
 
 const defaultUser = [
   { name: "Damon", email: "damon@gmail.com", password: "sa123" },

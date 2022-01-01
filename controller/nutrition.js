@@ -29,14 +29,27 @@ router.get("/get-nutrition", verifyToken, async (req, res) => {
 });
 
 router.get("/get-all-nutrition", verifyToken, async (req, res) => {
-  const getAllNutrition = await Nutrition.find({ user: req.User.id })
-    .populate("user")
-    .sort({ createdAt: -1 });
-  res.status(202).json({
-    success: true,
-    result: getAllNutrition.length,
-    message: getAllNutrition,
-  });
+  try {
+    const getAllNutrition = await Nutrition.find({ user: req.User.id })
+      .populate("user")
+      .sort({ createdAt: -1 });
+    if (!getAllNutrition) {
+      res.status(404).json({
+        success: false,
+        message: "nutrition data not found",
+      });
+    }
+    res.status(202).json({
+      success: true,
+      result: getAllNutrition.length,
+      message: getAllNutrition,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
 });
 
 router.post(
@@ -46,7 +59,7 @@ router.post(
   verifyToken,
   async (req, res, next) => {
     const { nutritionname, ingredient, procedure } = req.body;
-    const nutritionImage = `localhost:3000/${req.file.path}`;
+    const nutritionImage = `localhost:5000/${req.file.path}`;
     const nutrition = await new Nutrition({
       nutritionname,
       ingredient,
@@ -78,7 +91,7 @@ router.post(
   async (req, res) => {
     const nutritionId = req.body.id;
     const { nutritionname, ingredient, procedure } = req.body;
-    const nutritionImage = `localhost:3000/${req.file.path}`;
+    const nutritionImage = `localhost:5000/${req.file.path}`;
     const option = { new: true };
     const updateNutrition = await Nutrition.findByIdAndUpdate(
       nutritionId,
@@ -112,7 +125,7 @@ router.post("/delete-nutrition", verifyToken, async (req, res) => {
     } else {
       res.status(404).json({
         success: false,
-        message: err.message,
+        message: "this is filed not deleted",
       });
     }
   }).populate("user");
@@ -120,29 +133,32 @@ router.post("/delete-nutrition", verifyToken, async (req, res) => {
 
 // following data
 router.get("/following-nutrition", verifyToken, async (req, res) => {
-  // const posts = await Nutrition.find({
-  //   user: { $in: [...req.User.followings, req.User.id] },
-  // }).populate("user");
-  // console.log(posts);
-  // res.json(posts);
-  // const ab = req.User;
-  const nutrition = await Nutrition.find(
-    {
-      user: { $in: req.User.followings },
-    },
-    (err, docs) => {
-      if (err) {
-        res.status(404).json({ err });
-      } else {
-        res.json({
-          success: true,
-          data: docs,
-        });
-      }
-    }
-  )
-    .populate("user")
-    .sort({ createdAt: -1 });
+  try {
+    const userId = req.User.id;
+    const userData = await User.findOne({ _id: userId });
+
+    const userFollowing = userData.followings;
+    console.log(userFollowing);
+    const response = userFollowing.map((element) =>
+      mongoose.Types.ObjectId(element)
+    );
+
+    const nutrition = await Nutrition.find({
+      user: { $in: response },
+    })
+
+      .populate("user")
+      .sort({ createdAt: -1 });
+    res.json({
+      success: true,
+      data: nutrition,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
 });
 // saved post
 router.post("/saved-nutrition", verifyToken, async (req, res) => {
@@ -200,25 +216,25 @@ router.post("/unsaved-nutrition", verifyToken, async (req, res) => {
   }
 });
 
-router.get("/get-following-nutrition", verifyToken, async (req, res) => {
-  // let nutritionArray = [];
-  try {
-    const currentUser = await User.findById(req.User.id);
-    const userNutrition = await Nutrition.find({ user: currentUser.id });
-    // console.log(userNutrition);
-    const followingNutrition = await Promise.all(
-      currentUser.followings.map((followingId) => {
-        return Nutrition.find({ user: followingId }).populate("user");
-      })
-    );
+// router.get("/get-following-nutrition", verifyToken, async (req, res) => {
+//   // let nutritionArray = [];
+//   try {
+//     const currentUser = await User.findById(req.User.id);
+//     const userNutrition = await Nutrition.find({ user: currentUser.id });
+//     // console.log(userNutrition);
+//     const followingNutrition = await Promise.all(
+//       currentUser.followings.map((followingId) => {
+//         return Nutrition.find({ user: followingId }).populate("user");
+//       })
+//     );
 
-    res.json(userNutrition.concat(...followingNutrition));
-  } catch (err) {
-    res.status(500).json({
-      success: false,
-      message: err.message,
-    });
-  }
-});
+//     res.json(userNutrition.concat(...followingNutrition));
+//   } catch (err) {
+//     res.status(500).json({
+//       success: false,
+//       message: err.message,
+//     });
+//   }
+// });
 
 module.exports = router;

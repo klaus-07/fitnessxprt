@@ -18,6 +18,15 @@ const fileStorageEngine = multer.diskStorage({
 
 const upload = multer({ storage: fileStorageEngine });
 
+router.get("/get-default-user", verifyToken, async (req, res) => {
+  const user = await User.find({}).limit(10);
+  if (!user) return res.json("error accureed");
+  res.json({
+    success: true,
+    data: user,
+  });
+});
+
 router.get("/get-user", verifyToken, async (req, res, next) => {
   try {
     const id = req.User.id;
@@ -30,7 +39,7 @@ router.get("/get-user", verifyToken, async (req, res, next) => {
 });
 
 router.get("/get-all-user", async (req, res, next) => {
-  const getAllUser = await User.find({});
+  const getAllUser = await User.find({}).select("-password");
   res.status(202).json(getAllUser);
 });
 
@@ -53,7 +62,7 @@ router.post("/register", userValidator.userValidator, async (req, res) => {
       const savedUser = await user.save();
       res.status(200).json({
         success: true,
-        savedUser,
+        data: savedUser,
       });
     } catch (err) {
       res.status(400).json({
@@ -73,6 +82,7 @@ router.post("/login", userValidator.loginValidator, async (req, res, next) => {
   const { email, password } = req.body;
 
   const user = await User.findOne({ email });
+
   if (user) {
     const validPass = await bcrypt.compare(password, user.password);
     if (validPass) {
@@ -87,9 +97,11 @@ router.post("/login", userValidator.loginValidator, async (req, res, next) => {
           expiresIn: "250d",
         }
       );
+      let userResponse = user.toObject();
+      delete userResponse.password;
       res.json({
         success: true,
-        user,
+        data: userResponse,
         access_token,
       });
     } else {
@@ -107,18 +119,29 @@ router.post("/login", userValidator.loginValidator, async (req, res, next) => {
 });
 
 router.post("/update-user", verifyToken, async (req, res, next) => {
-  const user = await req.body;
-  User.updateOne({ _id: req.User.id }, user)
-    .then(() => {
-      res.status(202).json({
+  // const user = await req.body;
+  const { name, email, password } = req.body;
+  // const ab = delete req.User.password;
+  // console.log(ab);
+  const id = req.User.id;
+  const salt = await bcrypt.genSalt(10);
+  const hashedPassword = await bcrypt.hash(password, salt);
+  const user = await User.findByIdAndUpdate(
+    id,
+    { name, email, password: hashedPassword },
+    { new: true }
+  )
+    .select("-password")
+    .then((result) => {
+      res.status(200).json({
         success: true,
-        message: user,
+        data: result,
       });
     })
-    .catch(() => {
+    .catch((err) => {
       res.status(404).json({
         success: false,
-        message: "please correct this ID",
+        message: err.message,
       });
     });
 });
@@ -144,8 +167,9 @@ router.post(
   verifyToken,
   async (req, res) => {
     const id = req.User.id;
+    console.log;
 
-    const userImage = `localhost:3000/${req.file.path}`;
+    const userImage = `localhost:5000/${req.file.path}`;
     const options = { new: true };
     const updateImage = await User.findByIdAndUpdate(id, { userImage }, options)
       .then((result) => {
@@ -178,7 +202,6 @@ router.post("/follow", verifyToken, async (req, res) => {
       { new: true }
     );
 
-    // console.log(req.User);
     const userfollowing = await User.findByIdAndUpdate(
       req.User.id,
       { $push: { followings: req.body.id } },
@@ -205,7 +228,6 @@ router.post("/unfollow", verifyToken, async (req, res) => {
     { new: true }
   );
 
-  // console.log(req.User);
   const userfollowing = await User.findByIdAndUpdate(
     req.User.id,
     { $pull: { followings: req.body.id } },
@@ -216,35 +238,5 @@ router.post("/unfollow", verifyToken, async (req, res) => {
     data: { userFollow, userfollowing },
   });
 });
-
-// unfollow user
-// router.post("/:id/unfollow", verifyToken, async (req, res) => {
-//   if (req.body.id !== req.params.id) {
-//     try {
-//       const user = await User.findById(req.params.id);
-//       const currentUser = await User.findById(req.body.id);
-//       if (user.followers.includes(req.body.id)) {
-//         await user.updateOne({ $pull: { followers: req.body.id } });
-//         await currentUser.updateOne({ $pull: { followings: req.params.id } });
-//         res.status(200).json({
-//           success: true,
-//           message: "user has been Unfollowed",
-//         });
-//       } else {
-//         res.status(403).json({
-//           success: false,
-//           message: `you don't follow this user`,
-//         });
-//       }
-//     } catch (err) {
-//       res.status(500).json(err);
-//     }
-//   } else {
-//     res.status(403).json({
-//       success: false,
-//       message: "you  unfollow yourself",
-//     });
-//   }
-// });
 
 module.exports = router;

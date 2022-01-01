@@ -38,4 +38,11 @@ const userRegisterSchema = new mongoose.Schema({
   },
 });
 
+const ab = userRegisterSchema.set("toJSON", {
+  transform: function (doc, ret, options) {
+    delete ret.password;
+    return ret;
+  },
+});
+
 module.exports = mongoose.model("User", userRegisterSchema);
