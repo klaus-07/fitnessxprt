@@ -35,7 +35,7 @@ app.use("/api/user", userRouter);
 app.use("/api/blog", blogRouter);
 app.use("/api/nutrition", nutritionRouter);
 app.use("/api/exercise", exerciseRouter);
-app.use("/images", express.static("images")); //make a folder public
+app.use(express.static("images")); //make a folder public
 
 // listen to the port 3000
 app.listen(process.env.APP_PORT, (err) => {

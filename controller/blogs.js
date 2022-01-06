@@ -6,21 +6,32 @@ const postValidator = require("../validator/postValidator");
 const verifyToken = require("../validator/services");
 const multer = require("multer");
 const mongoose = require("mongoose");
+const dotenv = require("dotenv").config();
+const path = require("path");
 const fileStorageEngine = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, "./images");
   },
   filename: (req, file, cb) => {
-    cb(null, Date.now() + "--" + file.originalname);
+    cb(
+      null,
+      file.fieldname + "-" + Date.now() + path.extname(file.originalname)
+    );
   },
 });
 
 const upload = multer({ storage: fileStorageEngine });
 
-router.get("/get-blog", verifyToken, async (req, res) => {
+router.post("/get-blog", verifyToken, async (req, res) => {
   const id = req.body.id;
   const getBlog = await Blogs.findById(id).populate("user");
-  res.status(202).json({
+  if (!getBlog) {
+    return res.status(404).json({
+      success: false,
+      message: "something went wrong",
+    });
+  }
+  res.status(200).json({
     success: true,
     message: getBlog,
   });
@@ -37,7 +48,7 @@ router.get("/get-all-blog", verifyToken, async (req, res) => {
         message: "blog data not found",
       });
     }
-    res.status(202).json({
+    res.status(200).json({
       success: true,
       data: getAllBlog,
     });
@@ -56,24 +67,25 @@ router.post(
   postValidator.blogsValidator,
   async (req, res, next) => {
     console.log(req.file);
-    const { blogname, description } = req.body;
-    const blogimage = `localhost:5000/${req.file.path}`;
+    const { blogName, description } = req.body;
+    const blogImage = `${process.env.ipconfig}/${req.file.filename}`;
+    console.log(req.file);
     const blog = await new Blogs({
-      blogname,
+      blogName,
       description,
-      blogimage,
+      blogImage,
       user: req.User.id,
     }).save();
     const savedData = await Blogs.findById(blog._id)
       .populate("user")
       .then((result) => {
-        res.status(202).json({
+        res.status(200).json({
           success: true,
           message: result,
         });
       })
       .catch((err) => {
-        res.status(501).json({
+        res.status(500).json({
           success: false,
           message: err,
         });
@@ -87,18 +99,18 @@ router.post(
   verifyToken,
   upload.single("image"),
   async (req, res) => {
-    const { blogname, description } = req.body;
-    const blogimage = `localhost:5000/${req.files.path}`;
+    const { blogName, description } = req.body;
+    const blogImage = `${process.env.ipconfig}/${req.file.filename}`;
     const option = { new: true };
     const updateBlogs = await Blogs.findByIdAndUpdate(
       req.body.id,
-      { blogname, description, blogimage },
+      { blogName, description, blogImage },
       option
     )
       .populate("user")
 
       .then((result) => {
-        res.status(202).json({
+        res.status(200).json({
           success: true,
           message: result,
         });
@@ -109,24 +121,21 @@ router.post(
           message: "please correct this ID",
         });
       });
-    console.log(updateBlogs);
   }
 );
 router.post("/delete-blog", verifyToken, async (req, res) => {
   const id = req.body.id;
-  const deleteBlog = await Blogs.findByIdAndDelete(id, (err, docs) => {
-    if (docs) {
-      res.status(202).json({
-        success: true,
-        message: docs,
-      });
-    } else {
-      res.status(404).json({
-        success: false,
-        message: (err, "Id is incorrect"),
-      });
-    }
-  }).populate("user");
+  const deleteBlog = await Blogs.findByIdAndDelete(id).populate("user");
+  if (!deleteBlog) {
+    res.status(404).json({
+      success: false,
+      message: "something went wrong",
+    });
+  }
+  res.status(200).json({
+    success: true,
+    data: deleteBlog,
+  });
 });
 
 router.get("/following-blog", verifyToken, async (req, res) => {
@@ -171,7 +180,7 @@ router.post("/saved-blog", verifyToken, async (req, res) => {
       { new: true }
     );
     if (!save) {
-      return res.status(400).json({
+      return res.status(404).json({
         success: false,
         message: "this user doee's not exists",
       });

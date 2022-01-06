@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const blogSchema = new mongoose.Schema(
   {
-    blogname: {
+    blogName: {
       type: String,
       required: true,
     },
@@ -10,7 +10,7 @@ const blogSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    blogimage: {
+    blogImage: {
       type: String,
       required: true,
     },

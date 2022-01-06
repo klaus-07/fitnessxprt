@@ -10,7 +10,7 @@ router.get("/get-exercise", verifyToken, async (req, res) => {
   try {
     const getExercise = await Exercise.findById(id).populate("user");
     if (!getExercise) {
-      return res.status(400).json({
+      return res.status(404).json({
         success: fasle,
         message: "there is no exercise",
       });
@@ -21,7 +21,7 @@ router.get("/get-exercise", verifyToken, async (req, res) => {
       });
     }
   } catch (error) {
-    res.status(400).json({
+    res.status(404).json({
       success: false,
       message: "this post not available",
     });
@@ -37,7 +37,7 @@ router.get("/get-all-exercise", verifyToken, async (req, res) => {
       data: getAllExercise,
     });
   } catch (error) {
-    res.status(400).json({
+    res.status(404).json({
       success: false,
       message: "something is wrong",
     });
@@ -95,7 +95,7 @@ router.post("/update-exercise", verifyToken, async (req, res) => {
     if (!exercise) console.log("exercise not found!");
 
     if (exercise.exercise[0].sets <= exercise.progress[0].sets)
-      return res.status(400).json({
+      return res.status(404).json({
         success: false,
         message: "sets limit reached!",
         // data: exercise,
@@ -168,7 +168,7 @@ router.post("/saved-exercise", verifyToken, async (req, res) => {
       { new: true }
     );
     if (!save) {
-      return res.status(400).json({
+      return res.status(404).json({
         success: false,
         message: "this user doesn't not exists",
       });

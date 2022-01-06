@@ -7,22 +7,27 @@ const Nutrition = require("../models/posts/nutrition");
 const User = require("../models/userRegister");
 const postValidator = require("../validator/postValidator");
 const verifyToken = require("../validator/services");
+const path = require("path");
+const dotenv = require("dotenv").config();
 
 const fileStorageEngine = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, "./images");
   },
   filename: (req, file, cb) => {
-    cb(null, Date.now() + "--" + file.originalname);
+    cb(
+      null,
+      file.fieldname + "-" + Date.now() + path.extname(file.originalname)
+    );
   },
 });
 
 const upload = multer({ storage: fileStorageEngine });
 
-router.get("/get-nutrition", verifyToken, async (req, res) => {
+router.post("/get-nutrition", verifyToken, async (req, res) => {
   const id = req.body.id;
   const getNutrition = await Nutrition.findById(id).populate("user");
-  res.status(202).json({
+  res.status(200).json({
     success: true,
     message: getNutrition,
   });
@@ -39,7 +44,7 @@ router.get("/get-all-nutrition", verifyToken, async (req, res) => {
         message: "nutrition data not found",
       });
     }
-    res.status(202).json({
+    res.status(200).json({
       success: true,
       result: getAllNutrition.length,
       message: getAllNutrition,
@@ -59,7 +64,8 @@ router.post(
   verifyToken,
   async (req, res, next) => {
     const { nutritionname, ingredient, procedure } = req.body;
-    const nutritionImage = `localhost:5000/${req.file.path}`;
+    const nutritionImage = `${process.env.ipconfig}/${req.file.filename}`;
+    console.log(req.file);
     const nutrition = await new Nutrition({
       nutritionname,
       ingredient,
@@ -70,7 +76,7 @@ router.post(
     const savedData = await Nutrition.findById(nutrition._id)
       .populate("user")
       .then((result) => {
-        res.status(202).json({
+        res.status(200).json({
           success: true,
           message: result,
         });
@@ -91,7 +97,7 @@ router.post(
   async (req, res) => {
     const nutritionId = req.body.id;
     const { nutritionname, ingredient, procedure } = req.body;
-    const nutritionImage = `localhost:5000/${req.file.path}`;
+    const nutritionImage = `${process.env.ipconfig}/${req.file.filename}`;
     const option = { new: true };
     const updateNutrition = await Nutrition.findByIdAndUpdate(
       nutritionId,
@@ -100,7 +106,7 @@ router.post(
     )
       .populate("user")
       .then((result) => {
-        res.status(202).json({
+        res.status(200).json({
           success: true,
           message: result,
         });
@@ -116,19 +122,19 @@ router.post(
 
 router.post("/delete-nutrition", verifyToken, async (req, res) => {
   const id = req.body.id;
-  const deleteNutrition = await Nutrition.findByIdAndDelete(id, (err, data) => {
-    if (data) {
-      res.status(200).json({
-        success: true,
-        message: data,
-      });
-    } else {
-      res.status(404).json({
-        success: false,
-        message: "this is filed not deleted",
-      });
-    }
-  }).populate("user");
+  const deleteNutrition = await Nutrition.findByIdAndDelete(id).populate(
+    "user"
+  );
+  if (!deleteNutrition) {
+    res.status(404).json({
+      success: false,
+      message: "something went wrong",
+    });
+  }
+  res.status(200).json({
+    success: true,
+    data: deleteNutrition,
+  });
 });
 
 // following data
@@ -215,26 +221,5 @@ router.post("/unsaved-nutrition", verifyToken, async (req, res) => {
     });
   }
 });
-
-// router.get("/get-following-nutrition", verifyToken, async (req, res) => {
-//   // let nutritionArray = [];
-//   try {
-//     const currentUser = await User.findById(req.User.id);
-//     const userNutrition = await Nutrition.find({ user: currentUser.id });
-//     // console.log(userNutrition);
-//     const followingNutrition = await Promise.all(
-//       currentUser.followings.map((followingId) => {
-//         return Nutrition.find({ user: followingId }).populate("user");
-//       })
-//     );
-
-//     res.json(userNutrition.concat(...followingNutrition));
-//   } catch (err) {
-//     res.status(500).json({
-//       success: false,
-//       message: err.message,
-//     });
-//   }
-// });
 
 module.exports = router;

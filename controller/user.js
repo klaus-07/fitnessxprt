@@ -6,13 +6,17 @@ const userValidator = require("../validator/userValiadtor");
 const jwt = require("jsonwebtoken");
 const verifyToken = require("../validator/services");
 const multer = require("multer");
+const path = require("path");
 
 const fileStorageEngine = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, "./images");
   },
   filename: (req, file, cb) => {
-    cb(null, Date.now() + "--" + file.originalname);
+    cb(
+      null,
+      file.fieldname + "-" + Date.now() + path.extname(file.originalname)
+    );
   },
 });
 
@@ -21,7 +25,7 @@ const upload = multer({ storage: fileStorageEngine });
 router.get("/get-default-user", verifyToken, async (req, res) => {
   const user = await User.find({}).limit(10);
   if (!user) return res.json("error accureed");
-  res.json({
+  res.status(200).json({
     success: true,
     data: user,
   });
@@ -40,7 +44,7 @@ router.get("/get-user", verifyToken, async (req, res, next) => {
 
 router.get("/get-all-user", async (req, res, next) => {
   const getAllUser = await User.find({}).select("-password");
-  res.status(202).json(getAllUser);
+  res.status(200).json(getAllUser);
 });
 
 router.post("/register", userValidator.userValidator, async (req, res) => {
@@ -149,7 +153,7 @@ router.post("/delete-user", verifyToken, async (req, res) => {
   const id = req.User.id;
   const deleteUser = await User.findByIdAndDelete(id, (err, docs) => {
     if (docs) {
-      res.status(202).json({
+      res.status(200).json({
         success: true,
         message: docs,
       });
@@ -169,11 +173,11 @@ router.post(
     const id = req.User.id;
     console.log;
 
-    const userImage = `localhost:5000/${req.file.path}`;
+    const userImage = `${process.env.ipconfig}/${req.file.filename}`;
     const options = { new: true };
     const updateImage = await User.findByIdAndUpdate(id, { userImage }, options)
       .then((result) => {
-        res.status(202).json({
+        res.status(200).json({
           success: true,
           message: result,
         });

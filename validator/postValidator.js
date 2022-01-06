@@ -4,9 +4,9 @@ const Nutrition = require("../models/posts/nutrition");
 const mongoose = require("mongoose");
 
 const blogsValidator = async (req, res, next) => {
-  const { blogname, description } = req.body;
+  const { blogName, description } = req.body;
 
-  if (!blogname) {
+  if (!blogName) {
     return res.json({
       success: false,
       message: "please add blogname field",
